@@ -6,7 +6,8 @@ import {
   View,
   Text,
   StatusBar,
-  TouchableOpacity
+  TouchableOpacity,
+  ImagePickerIOS
 } from 'react-native';
 
 import {
@@ -15,10 +16,24 @@ import {
 } from 'react-native/Libraries/NewAppScreen';
 import { _file } from './File';
 import {request, PERMISSIONS} from 'react-native-permissions';
-
-
+import {launchImageLibrary} from "react-native-image-picker";
+import { VideoPlayer,ProcessingManager } from 'react-native-video-processing';
 
 const App = () => {
+  const [uri, setUri] = React.useState(null);
+  const video = React.useRef(null);
+
+  const onButtonPress = React.useCallback((type, options) => {
+      launchImageLibrary({
+        selectionLimit: 0,
+        mediaType: 'video',
+      }, async (res) => {
+        console.log(res);
+        setUri(res.assets[0].uri);
+        const info = await ProcessingManager.getVideoInfo(res.assets[0].uri);
+        console.log(info);
+      });
+  }, []);
   const createFile = async() => {
     try {
       const name = "test"+Math.random()*10;
@@ -38,6 +53,9 @@ const App = () => {
       console.error(error);
     }
   }
+  const getInfo = async() => {
+    console.log(await video.current?.getVideoInfo());
+  }; 
   return (
     <>
       <StatusBar barStyle="dark-content" />
@@ -54,7 +72,26 @@ const App = () => {
               <TouchableOpacity onPress={requestPermisson}>
                 <Text style={styles.sectionTitle}>Request Permisson</Text>
               </TouchableOpacity>
+              <TouchableOpacity onPress={onButtonPress}>
+                <Text style={styles.sectionTitle}>Open Gallery</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={getInfo}>
+                <Text style={styles.sectionTitle}>Get Video Info</Text>
+              </TouchableOpacity>
             </View>
+            <VideoPlayer
+                    ref={video}
+                    startTime={0}  // seconds
+                    endTime={10}   // seconds
+                    play={true}     // default false
+                    replay={true}   // should player play video again if it's ended
+                    rotate={true}   // use this prop to rotate video if it captured in landscape mode iOS only
+                    source={uri}
+                    playerWidth={300} // iOS only
+                    playerHeight={500} // iOS only
+                    style={{ width:200,height:200}}
+                    resizeMode={VideoPlayer.Constants.resizeMode.CONTAIN}
+                />
           </View>
         </ScrollView>
       </SafeAreaView>
